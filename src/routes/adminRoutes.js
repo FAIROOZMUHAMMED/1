@@ -8,7 +8,9 @@ const Authordata = require('../model/Authordata');
 
 // Set Storage Engine
 const storage = multer.diskStorage({
-    destination: './public/images/',
+    destination: function(req,file,cb){
+        cb(null, path.join('/public/images/'));
+    },
     filename : function (req,file,cb) {
         cb(null,file.fieldname + '-'+ Date.now()+
         path.extname(file.originalname));
