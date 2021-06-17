@@ -1,8 +1,7 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 const adminRoutes = express.Router();
-adminRoutes.use(express.static('./public'));
+const multer = require('multer');
+const path= require('path');
 const Bookdata = require('../model/Bookdata');
 const Authordata = require('../model/Authordata');
 
@@ -12,35 +11,18 @@ const storage = multer.diskStorage({
         cb(null, path.join(__dirname,'../public/images/'));
     },
     filename : function (req,file,cb) {
-        cb(null,file.fieldname + '-'+ Date.now()+
-        path.extname(file.originalname));
+        cb(null,Date.now()+'-'+file.originalname
+        // +path.extname(file.originalname)
+        );
     }
 });
-
+ 
+// process.env.HOME
 // Initialize Upload
 const uploads = multer({
-    storage: storage,
-    fileFilter : function (req,file, cb) {
-        checkFileType(file, cb);
-    }
-}).single('image');
+    storage: storage
+});
 
-// Check File Type
-function checkFileType(file,cb) {
-    // Allowed extentions
-    const filetypes = /jpeg|jpg|png|gif/;
-    // check Extention
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    // check mime
-    const mimetype = filetypes.test(file.mimetype);
-
-    if(mimetype && extname){
-        return cb(null,true);
-    }
-    else{
-        cb('Error: Image only!');       
-    }
-}
 
 function router(navAdmin){
     // Home
@@ -80,7 +62,7 @@ function router(navAdmin){
     // Delete Book
     adminRoutes.get('/books/delete/:id',function(req,res){
         const id= req.params.id;
-        Bookdata.remove({_id:id})
+        Bookdata.deleteOne({_id:id})
         .then(function(){ 
             res.redirect('/adminhome/books');
         });
@@ -99,24 +81,10 @@ function router(navAdmin){
             }); 
         });      
     });
-    adminRoutes.post('/bookupdate/update/:id',function(req,res){
-
-        uploads(req,res,(err)=>{
-            if(err){
-                const id= req.params.id;
-                Bookdata.findOne({_id:id})
-                .then(function(book){
-                    res.render('bookupdate',{
-                    navAdmin,
-                    title:'Library',
-                    book,
-                    msg:err
-                    }); 
-                }); 
-            }
-            else{
-                const id= req.params.id;
-                var item ={
+    adminRoutes.post('/bookupdate/update/:id',uploads.single('image'),function(req,res){
+        const id= req.params.id; 
+        // uploads(req,res,()=>{             
+                const item ={
                 title :req.body.title,
                 author : req.body.author,
                 genre : req.body.genre,
@@ -124,12 +92,11 @@ function router(navAdmin){
                 details : req.body.details
                 } 
      
-                Bookdata.updateOne({_id:id},{$set: item})
+                const book = Bookdata.updateOne({_id:id},{$set: item})
                 .then(function(){
-                res.redirect('/adminhome/books');
-                });
-            };
-        });    
+                    res.redirect('/adminhome/books');
+                });              
+             
     });
 
      // Add Book
@@ -141,29 +108,20 @@ function router(navAdmin){
         });
     });
 
-    adminRoutes.post('/addbooks/add',function(req,res){
-        
-        uploads(req,res,(err)=>{           
-            if(err){
-                res.render("addbook",{
-                    navAdmin,
-                    title:'Library',
-                    msg: err                   
-                });
-            }
-            else{               
-                var item ={
+    adminRoutes.post('/addbooks/add',uploads.single('image'),function(req,res){
+
+        // uploads(req,res,()=>{                          
+                const items ={
                     title :req.body.title,
                     author : req.body.author,
                     genre : req.body.genre,
                     image : req.file.filename,
                     details : req.body.details
                 }
-                var book = Bookdata(item);
-                book.save()
+                const book = Bookdata(items);
+                book.save();
                 res.redirect('/adminhome/books');
-            }
-        });
+            // });
           
     });
     
@@ -195,7 +153,7 @@ function router(navAdmin){
     // Delete Author
     adminRoutes.get('/authors/delete/:id',function(req,res){
         const id= req.params.id;
-        Authordata.remove({_id:id})
+        Authordata.deleteOne({_id:id})
         .then(function(){ 
             res.redirect('/adminhome/authors');
         });
@@ -214,23 +172,9 @@ function router(navAdmin){
             }); 
         });      
     });
-    adminRoutes.post('/authorupdate/update/:id',function(req,res){
-        uploads(req,res,(err)=>{
-            if(err){
-                const id= req.params.id;
-                Authordata.findOne({_id:id})
-                .then(function(author){
-                        res.render('authorupdate',{
-                        navAdmin,
-                        title:'Library',
-                        author,
-                        msg:err
-                    }); 
-                }); 
-            }
-            else{
-                const id= req.params.id;
-                var item ={
+    adminRoutes.post('/authorupdate/update/:id',uploads.single('image'),function(req,res){
+        const id= req.params.id;
+                const item ={
                     name :req.body.name,
                     nationality : req.body.nationality,
                     image : req.file.filename,
@@ -239,9 +183,7 @@ function router(navAdmin){
                 Authordata.updateOne({_id:id},{$set: item})
                 .then(function(){
                     res.redirect('/adminhome/authors');
-                }); 
-            };
-        });
+                });              
              
     });
 
@@ -254,29 +196,17 @@ function router(navAdmin){
             });
         });
     
-    adminRoutes.post('/addauthors/add',function(req,res){
-
-        uploads(req,res,(err)=>{            
-            if(err){
-                res.render("addbook",{
-                    navAdmin,
-                    title:'Library',
-                    msg: err
-                       
-                });
-            }
-            else{               
-                var item ={
+    adminRoutes.post('/addauthors/add',uploads.single('image'),function(req,res){
+                         
+                const item ={
                     name :req.body.name,
                     nationality : req.body.nationality,
                     image : req.file.filename,
                     details : req.body.details
                 }
-                var author = Authordata(item);
+                const author = Authordata(item);
                 author.save();
                 res.redirect('/adminhome/authors');
-            };
-        });
     });    
         
     return adminRoutes;
